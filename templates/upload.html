@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Images</title>
+</head>
+<body>
+    <h1>Upload Images</h1>
+    <form id="imageForm" enctype="multipart/form-data">
+        <label for="colorImage">Color Image:</label>
+        <input type="file" id="colorImage" name="color_image"><br><br>
+        
+        <label for="depthImage">Depth Image:</label>
+        <input type="file" id="depthImage" name="depth_image"><br><br>
+
+        <input type="submit" value="Upload">
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('imageForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var formData = new FormData();
+            formData.append('color_image', document.getElementById('colorImage').files[0]);
+            formData.append('depth_image', document.getElementById('depthImage').files[0]);
+
+            fetch('/process_images', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
