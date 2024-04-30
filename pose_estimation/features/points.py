@@ -33,8 +33,8 @@ def imgcoord2camcoord(depth, img_coord_glob, args):
         z = (v[1] - args.py) * y / args.fy
         cam_coord[k] = (x, y, z)
 
-    assert ((args.brick_width - 10 <= (cam_coord["right"][0]-cam_coord["left"][0]) <= args.brick_width + 10) or
-            (args.brick_depth - 10 <= (cam_coord["right"][0]-cam_coord["left"][0]) <= args.brick_depth + 10) or
+    assert ((args.brick_width - 15 <= (cam_coord["right"][0]-cam_coord["left"][0]) <= args.brick_width + 15) or     # check width for normal stone
+            (args.brick_depth - 10 <= (cam_coord["right"][0]-cam_coord["left"][0]) <= args.brick_depth + 10) or     # check width for corner stone
             (args.brick_height - 10 <= (cam_coord["bot"][-1]-cam_coord["bot"][-1]) <= args.brick_height + 10)), "Pose uncertain: invalid coordinate estimation"
     
     if args.brick_depth - 10 <= (cam_coord["right"][0]-cam_coord["left"][0]) <= args.brick_depth + 10:

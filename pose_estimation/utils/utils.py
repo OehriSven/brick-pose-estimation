@@ -2,6 +2,8 @@
 
 import json
 import numpy as np
+import cv2
+import base64
 
 def roi(img, args):
     """Return the region of interest window
@@ -83,25 +85,42 @@ def roi2glob(img_coord_roi, args):
 
     return img_coord_glob
 
-def json_parser(cam_coord, roll, pitch, yaw, args):
+def draw_feats(img, coords, lines):
+    for _, v in coords.items():
+        cv2.circle(img, v, radius=7, color=(255, 0, 0), thickness=-1)
+
+    for line in lines:
+        cv2.line(img, line[0], line[1], (0, 0, 255), thickness=2)
+    
+    return img
+
+def base64_converter(img):
+    _, buffer = cv2.imencode('.png', img)
+    img_string = base64.b64encode(buffer).decode()
+
+    return img_string
+
+def output_parser(cam_coord, roll, pitch, yaw, img, args):
     "Parse pose into JSON format including corner stone transformation."
 
-    pose = {}
-    pose["x"] = np.round(cam_coord["mid"][0], 1)
+    res = {"pose": {}}
+    res["pose"]["x"] = np.round(cam_coord["mid"][0], 1)
     
     if args.corner_stone:
-        pose["y"] = np.round(cam_coord["mid"][1], 1) + args.brick_width/2
+        res["pose"]["y"] = np.round(cam_coord["mid"][1], 1) + args.brick_width/2
     else:
-        pose["y"] = np.round(cam_coord["mid"][1], 1) + args.brick_depth/2
-    pose["z"] = np.round(cam_coord["mid"][2], 1)
+        res["pose"]["y"] = np.round(cam_coord["mid"][1], 1) + args.brick_depth/2
+    res["pose"]["z"] = np.round(cam_coord["mid"][2], 1)
     
     if args.corner_stone:
-        pose["roll"] = np.round(pitch, 1)
-        pose["pitch"] = np.round(roll, 1)
+        res["pose"]["roll"] = np.round(pitch, 1)
+        res["pose"]["pitch"] = np.round(roll, 1)
     else:
-        pose["roll"] = np.round(roll, 1)
-        pose["pitch"] = np.round(pitch, 1)
+        res["pose"]["roll"] = np.round(roll, 1)
+        res["pose"]["pitch"] = np.round(pitch, 1)
 
-    pose["yaw"] = np.round(yaw, 1)
+    res["pose"]["yaw"] = np.round(yaw, 1)
 
-    return json.dumps(pose, indent = 4)
+    res["resulting_image"] = base64_converter(img)
+
+    return res

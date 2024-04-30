@@ -13,19 +13,33 @@
         
         <label for="depthImage">Depth Image:</label>
         <input type="file" id="depthImage" name="depth_image"><br><br>
-
+    
+        <!-- Checkbox for boolean value -->
+        <input type="checkbox" id="boolSAM" name="bool_sam">
+        <label for="boolSAM">SAM supported pose estimation?</label><br><br>
+    
         <input type="submit" value="Upload">
     </form>
 
+    <p id="status"></p>
     <div id="result"></div>
+    <div id="resultImage"></div>
 
     <script>
+        // JavaScript code to handle form submission and display image
         document.getElementById('imageForm').addEventListener('submit', function(event) {
             event.preventDefault();
+
+            // Show "Calculating pose..." message
+            document.getElementById('result').innerText = '';
+            document.getElementById('resultImage').innerHTML = '';
+            document.getElementById('status').textContent = 'Calculating pose...';
 
             var formData = new FormData();
             formData.append('color_image', document.getElementById('colorImage').files[0]);
             formData.append('depth_image', document.getElementById('depthImage').files[0]);
+            formData.append('bool_sam', document.getElementById('boolSAM').checked); // Add the boolean value
+
 
             fetch('/process_images', {
                 method: 'POST',
@@ -33,10 +47,39 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+                // Hide "Calculating pose..." message
+                document.getElementById('status').textContent = '';
+
+                if ("error" in data) {
+                    document.getElementById('result').innerHTML = "<p>" + data.error + "</p>";
+                } else {
+                    // Define the order of keys
+                    var order = ['x', 'y', 'z', 'roll', 'pitch', 'yaw'];
+
+                    // Display pose information as Key: Value pairs with bold keys
+                    var poseString = '';
+                    for (var i = 0; i < order.length; i++) {
+                        var key = order[i];
+                        if (data.pose.hasOwnProperty(key)) {
+                            poseString += '<b>' + key + ':</b> ' + data.pose[key] + '<br>';
+                        }
+                    }
+                    document.getElementById('result').innerHTML = poseString;
+
+                    // Create a new Image element
+                    var img = new Image();
+
+                    // Set the src attribute with the base64 string
+                    img.src = 'data:image/png;base64,' + data.resulting_image;
+
+                    // Append the Image element to the resultImage div
+                    document.getElementById('resultImage').appendChild(img);
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
+                // Hide "Calculating pose..." message on error
+                // document.getElementById('status').textContent = '';
             });
         });
     </script>

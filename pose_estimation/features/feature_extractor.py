@@ -11,7 +11,16 @@ from ..utils.utils import (
 def hough_transformation(mask, top, bot, args):
     """Extract horizontal hough lines from binary thresh mask"""
     lines_xy = []
-    lines = cv2.HoughLines(mask, 1, np.pi / 180, args.thresh_hough, None, 0, 0)
+
+    if args.sam:
+        thresh_hough = 120 # args.thresh_hough
+        lines = None
+        while lines is None or not any([item[0][0] > 50 for item in lines]):
+            lines = cv2.HoughLines(mask, 1, np.pi / 180, thresh_hough, None, 0, 0)
+            thresh_hough -= 10
+    else:
+        lines = cv2.HoughLines(mask, 1, np.pi / 180, args.thresh_hough, None, 0, 0)
+
     for line in lines:
         rho = line[0][0]
         theta = line[0][1]
@@ -25,6 +34,11 @@ def hough_transformation(mask, top, bot, args):
 
     # Non-Max-Suppression of detected Hough lines
     clustered_lines = [line[0] for line in cluster_lines(lines_xy, args.thresh_cluster)]
+
+    if args.sam:
+        for line in clustered_lines:
+            if line[1][1] > 50:
+                clustered_lines = [line]
 
     # Assert at least one, but at most to resulting hough lines for top and bottom edge
     assert 1 <= len(clustered_lines) <= 2, "Hough transformation not successful"

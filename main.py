@@ -6,7 +6,8 @@ import traceback
 import argparse
 from flask import Flask, request, jsonify, render_template
 
-from pose_estimation.pose_estimation import pose_estimation
+from pose_estimation.pose_estimation_cv import pose_estimation_cv
+from pose_estimation.pose_estimation_sam import pose_estimation_sam
 
 
 def get_args_parser():
@@ -20,6 +21,8 @@ def get_args_parser():
     parser.add_argument('--brick-height', default=50.0, type=float, help="Physical height of brick")
     parser.add_argument('--brick-depth', default=100.0, type=float, help="Physical depth of brick")
 
+    # SAM parameters
+    parser.add_argument('--sam-model', default="vit_b", type=str, help="Backbone model Meta's of Segment Anything Model (SAM)")
 
     # ROI parameters
     parser.add_argument('--roi-center', default=(424,300), type=tuple, help="ROI center image coordinates (x, y)")
@@ -70,6 +73,8 @@ def process_images():
 
     color_image = request.files['color_image']
     depth_image = request.files['depth_image']
+    
+    args.sam = request.form.get('bool_sam') == "true"
 
     # Save images to disk before passing to pose estimation method
     if not os.path.exists(args.savedir):
@@ -79,15 +84,14 @@ def process_images():
 
     # Call the pose estimation method with the input images
     try:
-        brick_pose = pose_estimation(os.path.join(args.savedir, 'color.png'), os.path.join(args.savedir, 'depth.png'), args)
-    # On insufficient/invalid pose estimation print error message and return dictionary of None
+        if args.sam:
+            brick_pose = pose_estimation_sam(os.path.join(args.savedir, 'color.png'), os.path.join(args.savedir, 'depth.png'), args)
+        else:
+            brick_pose = pose_estimation_cv(os.path.join(args.savedir, 'color.png'), os.path.join(args.savedir, 'depth.png'), args)
+
+    # On insufficient/invalid pose estimation return error message
     except AssertionError:
-        _, _, tb = sys.exc_info()
-        traceback.print_tb(tb) # Fixed format
-        tb_info = traceback.extract_tb(tb)
-        filename, line, func, text = tb_info[-1]
-        print(traceback.format_exc())
-        return {None: None}
+        return {"error": f"<pre>{traceback.format_exc()}</pre>"}
 
     return brick_pose
 

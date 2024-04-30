@@ -1,15 +1,17 @@
 """This module runs the pose estimation script"""
 
 import cv2
+import numpy as np
 
 from .utils.utils import (
     roi,
     roi2glob,
+    draw_feats,
     angle_from_points,
     angle_from_lines,
-    json_parser
+    output_parser
 )
-from .segmentation.segment import segment_canny, segment_thresh
+from .segmentation.segment import segment_sam, segment_canny
 from .features.feature_extractor import (
     horizontal_edge_extractor,
     vertical_edge_extractor,
@@ -18,7 +20,7 @@ from .features.feature_extractor import (
 from .features.points import feats2points, imgcoord2camcoord
 
 
-def pose_estimation(color_png, depth_png, args):
+def pose_estimation_sam(color_png, depth_png, args):
     color, depth = cv2.imread(color_png), cv2.imread(depth_png, -1)
 
     assert color is not None, "Color image file could not be read, check with os.path.exists()"
@@ -30,16 +32,19 @@ def pose_estimation(color_png, depth_png, args):
     color_roi = roi(color, args)
 
     # Brick segmentation in ROI window
+    mask_sam = segment_sam(color_roi, args)
     mask_canny = segment_canny(color_roi, args)
-    mask_thresh = segment_thresh(color_roi, args)
 
     # Feature extraction from segmented brick in ROI window
     top, bot = horizontal_edge_extractor(mask_canny, args)
-    left, right = vertical_edge_extractor(mask_canny, args)
-    hough_lines = hough_transformation(mask_thresh, top, bot, args)
+    left, right = vertical_edge_extractor(mask_sam, args)
+    hough_lines = hough_transformation(mask_sam, top, bot, args)
 
     # True point adaption
     img_coord_roi = feats2points(left, right, hough_lines)
+
+    # Draw features in output image
+    draw_roi = draw_feats(color_roi, img_coord_roi, hough_lines)
 
     # Re-transformation of ROI coordinates to global image coordinates
     img_coord_glob = roi2glob(img_coord_roi, args)
@@ -53,6 +58,6 @@ def pose_estimation(color_png, depth_png, args):
     yaw = angle_from_points(cam_coord, angle="yaw")
 
     # JSON pose
-    pose_json = json_parser(cam_coord, roll, pitch, yaw, args)
+    output = output_parser(cam_coord, roll, pitch, yaw, draw_roi, args)
 
-    return pose_json
+    return output
