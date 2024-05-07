@@ -8,9 +8,9 @@ This repository serves as an implementation of a brick pose estimation algorithm
 Due to the small size of the sample dataset and missing annotations training a deep learning model from scratch is not feasible. Hence, conventional computer vision methods are applied to solve the task. Additionally, Meta's Segment Anything Model (SAM) is utilized to robustify the segmentation of the brick of interest. Following, the algorithm is described:
 
 <p align="middle">
-    <img src=".github/thresh.png" width="33.0%">
-    <img src=".github/canny.png" width="33.0%">
-    <img src=".github/sam.png" width="33.0%">
+    <img src=".github/thresh.png" width="32.0%">
+    <img src=".github/canny.png" width="32.0%">
+    <img src=".github/sam.png" width="32.0%">
 </p>
 
 <p align="center"> Figure 1: Brick masks as a result of adaptive thresholding (left), canny edge detection (center), and SAM's segmentation (right). </p>
@@ -18,8 +18,8 @@ Due to the small size of the sample dataset and missing annotations training a d
 As only parts of the image are of interest and the approximate position of the brick is deterministic, the image is cropped to a region of interest (ROI) in the first step. Subsequently, the brick is segmented resulting in a binary mask of the outline of the front-faced wall. This is achieved by combining adaptive thresholding (see Figure 1, left) and canny edge detection (see Figure 1, center). To robustify the segmentation of the brick of interest Meta's SAM is applied additionaly utilizing a center point prompt (see Figure 1, right). With the help of the masks relevant features are derived: a Hough line transformation is applied to the horizontal edges (see Figure 2, right, red lines) and top, bottom, left, right and center image coordinates of the brick are estimated (see Figure 2, right, blue points). The estimated image coordinates are then transformed to 3D coordinates with respect to the camera center utilizing the intrinsic camera parameters and the depth information. After adding half of the brick depth to the y,-coordinate the center point corresponds to the position (x, y, z) of the brick. The pitch angle is derived from the Hough lines. The roll and yaw angles are calculated based on the camera coordinates of the top, bottom, left and right points of the brick.
 
 <p align="middle">
-    <img src=".github/roi.png" width="33.0%">
-    <img src=".github/feats.png" width="33.0%">
+    <img src=".github/roi.png" width="32.0%">
+    <img src=".github/feats.png" width="32.0%">
 </p>
 
 Figure 2: ROI color image of brick of interest without (left) and with estimated features (right). Depicted are the estimated Hough lines and top, bottom, left, right and center image coordinates.
