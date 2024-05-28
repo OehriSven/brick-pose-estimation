@@ -47,7 +47,7 @@ Install the package:
 pip install -r requirements.txt
 ```
 
-## Demo
+### Demo
 
 - Run `main.py`:
 
